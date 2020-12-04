@@ -48,7 +48,7 @@ validPid value = (length value == 9) && isJust numeric
 validEcl = isJust . parseMaybe (choice choices)
   where choices = map string ["amb","blu","brn","gry","grn","hzl","oth"]
 
-validByr = years 1920 2019
+validByr = years 1920 2002
 validIyr = years 2010 2020
 validEyr = years 2020 2030
 
@@ -77,7 +77,12 @@ validField passport key = maybe False validate value
 valid :: [(String, String)] -> Bool
 valid passport = all id $ map (validField passport) required
 
+debugLog key entry = (val, isValid val)
+  where val = lookup key entry
+        isValid val = maybe False (fromJust $ lookup key rules) val
+
 main = do
   contents <- readFile "Day04.txt"
   let entries = parseMaybe passports contents
   putStrLn $ show $ length $ filter valid $ fromJust entries
+  -- putStrLn $ unlines $ map show $ map (debugLog "ecl") $ fromJust entries
