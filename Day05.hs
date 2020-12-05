@@ -7,8 +7,8 @@ unbinary :: [Int] -> Int
 unbinary = foldl (\acc bit -> (acc*2) + bit) 0
 
 findGap :: [Int] -> Int
-findGap l = 1 + head l + (length $ takeWhile (==1) $ steps)
-  where steps = zipWith (-) (drop 1 l) l
+findGap = (1+) . fst . head . dropWhile (\(x,y)->y==x+1) . pairs
+  where pairs l = zip l (tail l)
 
 main = do
   contents <- readFile "Day05.txt"
