@@ -4,7 +4,7 @@ seatId :: String -> Int
 seatId = unbinary . map (fromEnum . flip elem "BR")
 
 unbinary :: [Int] -> Int
-unbinary = foldl (\bit acc -> (bit*2) + acc) 0
+unbinary = foldl (\acc bit -> (acc*2) + bit) 0
 
 findGap :: [Int] -> Int
 findGap l = 1 + head l + (length $ takeWhile (==1) $ steps)
