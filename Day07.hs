@@ -13,6 +13,17 @@ main = do
   let (graph, nodeFromVertex, vertexFromKey) = graphFromEdges edgeList
   let pathToSg (desc,_) = path graph (fromJust $ vertexFromKey desc) (fromJust $ vertexFromKey "shinygold")
   putStrLn $ show $ (length $ filter pathToSg entries) - 1
+  putStrLn $ show $ bagsContained entries (findBag entries "shinygold")
+
+findBag :: [Bag] -> String -> Bag
+findBag bags name = head $ filter (\(desc,_) -> desc == name) bags
+
+bagsContained :: [Bag] -> Bag -> Int
+bagsContained _ (_, []) = 0
+bagsContained bags (desc, entries) = contents + innerContents
+  where contents = sum $ map fst entries
+        innerContents = sum $ map bagsIn entries
+        bagsIn (weight, name) = weight * bagsContained bags (findBag bags name)
 
 color :: ((), String, [String]) -> String
 color (_, desc, inner) = desc
