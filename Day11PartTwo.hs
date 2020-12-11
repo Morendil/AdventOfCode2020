@@ -8,7 +8,7 @@ indexedGrid :: [String] -> Seats
 indexedGrid gridLines = M.fromList $ [((x,y), c) | (y, line) <- indexed gridLines, (x, c) <- indexed line, c /= '.']
 
 guard :: Seats -> Seats
-guard seats = M.fromList $ (M.toList seats) ++ [(g,'.')|g<-guards]
+guard seats = M.fromList $ M.toList seats ++ [(g,'.')|g<-guards]
   where guards = concat caps ++ concat borders
         caps = [[(x,-1),(x,yMax+1)]|x<-[-1..xMax+1]]
         borders = [[(-1,y),(xMax+1,y)]|y<-[0..yMax]]
@@ -28,7 +28,7 @@ neighbours :: Seats -> Point -> [Char]
 neighbours seats point = map (visible seats point) offsets
 
 visible :: Seats -> Point -> Point -> Char
-visible seats from offset = head $ mapMaybe (flip M.lookup $ seats) $ tail $ iterate (add offset) from
+visible seats from offset = head $ mapMaybe (flip M.lookup seats) $ tail $ iterate (add offset) from
 
 evolve :: Seats -> Seats
 evolve seats = M.mapWithKey (evolveCell seats) seats
@@ -54,4 +54,4 @@ main = do
   let seats = guard $ indexedGrid $ lines contents
   -- putStrLn $ unlines $ display $ evolve $ evolve seats
   let stable = converge evolve seats
-  putStrLn $ show $ length $ M.filter (=='#') stable
+  print $ length $ M.filter (=='#') stable
