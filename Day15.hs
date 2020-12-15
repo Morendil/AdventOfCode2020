@@ -3,13 +3,17 @@ import Data.Maybe
 import Data.List
 
 main = do
-  print $ part1 [3,1,2]
+  print $ part1 [0,14,6,20,1,4]
+  print $ part2 [0,14,6,20,1,4]
 
 type Turns = (Int, Int)
 type State = (M.Map Int Turns, Int, Int)
 
 part1 :: [Int] -> Int
-part1 numbers = last $ take (2020-3) $ unfoldr (Just . step) (initial numbers)
+part1 numbers = last $ take (2020-(length numbers)) $ unfoldr (Just . step) (initial numbers)
+
+part2 :: [Int] -> Int
+part2 numbers = last $ take (30000000-(length numbers)) $ unfoldr (Just . step) (initial numbers)
 
 initial :: [Int] -> State
 initial numbers = (M.fromList seed, last numbers, length numbers + 1)
