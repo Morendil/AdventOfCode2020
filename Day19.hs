@@ -3,6 +3,7 @@ import Text.ParserCombinators.ReadP
 import Data.Char (isNumber)
 import Data.Maybe (mapMaybe, fromJust, isJust)
 import qualified Data.Map as M
+import Control.Monad (void)
 
 type Rule = (Int, Prod)
 data Prod = Lit Char | Alt [[Int]] | Seq [Int]
@@ -16,37 +17,20 @@ makeParser rules = do
   return result
 
 mkParser :: Rules -> Prod -> ReadP ()
-mkParser rules (Lit c) = char c >> return ()
+mkParser rules (Lit c) = void (char c)
 mkParser rules (Alt as) = choice $ map (mkParser rules . Seq) as
-mkParser rules (Seq is) = do
+mkParser rules (Seq is) = mapM_ deref is
   -- insert 8 & 11 rules for part2, delete for part1
-  let deref 8 = do {many1 (deref 42); return ()}
-      deref 11 = do {deref 42; optional (deref 11); deref 31; return ()}
-      deref i = mkParser rules $ fromJust $ M.lookup i rules
-  coll <- sequence $ map deref is
-  return $ last coll
+  where deref 8 = void (many1 (deref 42))
+        deref 11 = void (between (deref 42) (deref 11) (optional (deref 31)))
+        deref i = mkParser rules $ fromJust $ M.lookup i rules
 
 rule :: ReadP Rule
-rule = do
-  index <- number
-  string ": "
-  prod <- choice [literal, list, fork]
-  return (index, prod)
-
-literal :: ReadP Prod
-literal = do
-  it <- between (char '"') (char '"') get
-  return $ Lit it
-
-fork :: ReadP Prod
-fork = do
-  values <- sepBy1 (sepBy1 number (string " ")) (string " | ")
-  return $ Alt values
-
-list :: ReadP Prod
-list = do
-  values <- sepBy1 number (string " ")
-  return $ Seq values
+rule = (,) <$> number <*> (string ": " *> choice [literal, list, fork])
+  -- all ReadP :: Prod
+  where literal = Lit <$> between (char '"') (char '"') get
+        fork = Alt <$> sepBy1 (sepBy1 number (string " ")) (string " | ")
+        list = Seq <$> sepBy1 number (string " ")
 
 main = do
   contents <- readFile "Day19.txt"
@@ -55,12 +39,10 @@ main = do
   let ruleMap = M.fromList $ mapMaybe (parseMaybe rule) rules
   let parser = makeParser ruleMap
   putStrLn $ unlines $ filter (isJust . parseMaybe parser) messages
-  print $ length $ (filter id) $ map (isJust . parseMaybe parser) messages
+  print $ length $ filter id $ map (isJust . parseMaybe parser) messages
 
 number :: ReadP Int
-number = do
-  lit <- many1 (satisfy isNumber)
-  return $ (read lit)
+number = read <$> many1 (satisfy isNumber)
 
 parseMaybe :: ReadP a -> String -> Maybe a
 parseMaybe parser input =
