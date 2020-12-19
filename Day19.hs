@@ -20,10 +20,7 @@ mkParser :: Rules -> Prod -> ReadP ()
 mkParser rules (Lit c) = void (char c)
 mkParser rules (Alt as) = choice $ map (mkParser rules . Seq) as
 mkParser rules (Seq is) = mapM_ deref is
-  -- insert 8 & 11 rules for part2, delete for part1
-  where deref 8 = void (many1 (deref 42))
-        deref 11 = void (between (deref 42) (deref 11) (optional (deref 31)))
-        deref i = mkParser rules $ fromJust $ M.lookup i rules
+  where deref i = mkParser rules $ fromJust $ M.lookup i rules
 
 rule :: ReadP Rule
 rule = (,) <$> number <*> (string ": " *> choice [literal, list, fork])
@@ -37,9 +34,11 @@ main = do
   let entries = filter (not.null) $ lines contents
   let (messages, rules) = partition (flip elem "ab" . head) entries
   let ruleMap = M.fromList $ mapMaybe (parseMaybe rule) rules
-  let parser = makeParser ruleMap
-  putStrLn $ unlines $ filter (isJust . parseMaybe parser) messages
-  print $ length $ filter id $ map (isJust . parseMaybe parser) messages
+  let part1 = makeParser ruleMap
+  print $ length $ filter id $ map (isJust . parseMaybe part1) messages
+  let ruleMap' = M.insert 8 (Alt [[42],[42,8]]) $ M.insert 11 (Alt [[42,31],[42,11,31]]) ruleMap
+  let part2 = makeParser ruleMap'
+  print $ length $ filter id $ map (isJust . parseMaybe part2) messages
 
 number :: ReadP Int
 number = read <$> many1 (satisfy isNumber)
