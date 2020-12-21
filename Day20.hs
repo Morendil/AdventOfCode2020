@@ -1,10 +1,9 @@
 import Text.ParserCombinators.ReadP
-import Data.Char
-import Data.Maybe
-import Data.List
-import Data.Function
+import Data.Char ( isNumber )
+import Data.Maybe ( fromJust )
+import Data.List ( isSubsequenceOf, (\\), elemIndices, transpose )
+import Data.Function ( (&) )
 import qualified Data.Map as M
-import Debug.Trace
 
 type Edge = String
 type Tile = [String]
