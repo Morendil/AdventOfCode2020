@@ -21,14 +21,14 @@ placeCol placed col (tId, thisPiece) = placeCol placed' col' (nxt,next)
         (original, grid) = fromJust $ M.lookup nxt placed
         neighbours = concat original
         get nId = snd $ fromJust $ M.lookup nId placed
-        goodWith fn = filter (\nId -> fits (fn newGrid) (get nId)) $ neighbours
+        goodWith fn = filter (fits (fn newGrid) . get) neighbours
         newOrder = map goodWith edgeOps
         constraint = last constraining
         candidates = orientations grid
         newGrid = head $ filter (\g -> constraint == head g) candidates
         next = (newOrder, newGrid)
         col' = col ++ [(nxt,next)]
-        placed' = (M.insert nxt next placed) :: Placed
+        placed' = M.insert nxt next placed
 
 placeRow :: Placed -> [Fits] -> Fits -> (Placed, [Fits])
 placeRow placed row (_, ([_,_,[],_], _)) = (placed, row)
@@ -37,20 +37,20 @@ placeRow placed row (tId, thisPiece) = placeRow placed' row' (nxt,next)
         (original, grid) = fromJust $ M.lookup nxt placed
         neighbours = concat original
         get nId = snd $ fromJust $ M.lookup nId placed
-        goodWith fn = filter (\nId -> fits (fn newGrid) (get nId)) $ neighbours
+        goodWith fn = filter (fits (fn newGrid) . get) neighbours
         newOrder = map goodWith edgeOps
-        constraint = (map last) constraining
+        constraint = map last constraining
         candidates = orientations grid
-        newGrid = head $ filter (\g -> constraint == (map head) g) candidates
+        newGrid = head $ filter (\g -> constraint ==  map head g) candidates
         next = (newOrder, newGrid)
         row' = row ++ [(nxt,next)]
-        placed' = (M.insert nxt next placed) :: Placed
+        placed' = M.insert nxt next placed
 
 main = do
   contents <- readFile "Day20.txt"
   let tileList = fromJust $ parseMaybe tiles contents
       arranged = map (findNeighbours tileList) tileList
-      cornerTiles = filter corner $ arranged    
+      cornerTiles = filter corner arranged    
       placed = M.fromList arranged  
   -- part1
   print $ product $ map fst cornerTiles
@@ -60,14 +60,14 @@ main = do
       makeRow (prev, list) piece = let (p,r) = placeRow prev [piece] piece in (p,list++[r])
       arrangement = snd $ foldl makeRow (placed',[]) cols
       expanded = map (map (trimEdges.snd.snd)) arrangement
-      unpuzzled = concatMap (foldr1 (zipWith (++))) $ expanded
+      unpuzzled = concatMap (foldr1 (zipWith (++))) expanded
       seaTiles = length $ filter (=='#') $ concat unpuzzled
       monsterCount = maximum $ map monsters $ orientations unpuzzled
       monTiles = 15 * monsterCount
       ori3 = orientations unpuzzled !! 3
   print $ length ori3
   print $ monsters ori3
-  print $ seaTiles
+  print seaTiles
   print $ seaTiles - monTiles
   -- print $ lookup 1019 arranged
   -- print $ lookup 1283 arranged
@@ -85,8 +85,8 @@ orientations = take 8 . flip (scanl (&)) ops
   where ops = concat $ replicate 4 [transpose, map reverse]
 
 monstersIn :: [[Int]] -> Int
-monstersIn l = length $ filter id $ map (\n -> foundAt n l) [0..(96-19)]
-  where foundAt n = all id . zipWith isSubsequenceOf (map (map (+n)) monster)
+monstersIn l = length $ filter id $ map (`foundAt` l) [0..(96-19)]
+  where foundAt n = and . zipWith isSubsequenceOf (map (map (+n)) monster)
 
 monster :: [[Int]]
 monster = map (elemIndices '#') ["                  #","#    ##    ##    ###"," #  #  #  #  #  #"]
@@ -99,7 +99,7 @@ topLeft :: Fits -> Bool
 topLeft (_, (fits, _)) = map length fits == [0,0,1,1] 
 
 corner :: Fits -> Bool
-corner (_, (fits, _)) = (length $ filter (not.null) fits) == 2
+corner (_, (fits, _)) = length (filter (not.null) fits) == 2
 
 edgeOps = [head, map head, map last, last]
 
@@ -107,8 +107,8 @@ edges :: Tile -> [Edge]
 edges tile = map ($ tile) edgeOps
 
 fits :: Edge -> Tile -> Bool
-fits edge tile = any (== edge) otherEdges
-  where otherEdges = (edges tile) ++ (map reverse $ edges tile)
+fits edge tile = edge `elem` otherEdges
+  where otherEdges = edges tile ++ map reverse (edges tile)
 
 findNeighbours :: Tiles -> Labeled -> Fits
 findNeighbours tiles labeled = (tileId, (findFits allOthers tile, tile))
@@ -131,7 +131,7 @@ tile = (,) <$> header <*> sepBy1 line (string "\n")
   where line = many1 (satisfy (`elem` "#."))
 
 header :: ReadP Int
-header = (string "Tile ") >> number <* (string ":\n")
+header = string "Tile " >> number <* string ":\n"
 
 number :: ReadP Int
 number = read <$> many1 (satisfy isNumber)
