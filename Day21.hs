@@ -3,7 +3,6 @@ import Data.Maybe
 import Data.Char
 import Data.List
 import qualified Data.Map as M
-import Debug.Trace
 
 type Dish = ([String], [String])
 type Guess = M.Map String [String]
@@ -15,9 +14,12 @@ main = do
       allergens = nub $ concatMap snd entries
       restricted = foldr (restrict entries) M.empty allergens
       solved = converge eliminate restricted
-      clean = ingredients \\ (concat $ M.elems solved)
+      dangerous = concat $ M.elems solved
+      clean = ingredients \\ dangerous
   -- part1 
   print $ length $ concatMap (intersect clean . fst) entries
+  -- part2 (sort order is taken care of by M.elems)
+  print $ intercalate "," dangerous
 
 converge :: Eq a => (a -> a) -> a -> a
 converge = until =<< ((==) =<<)
