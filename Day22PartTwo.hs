@@ -1,8 +1,8 @@
 import Data.Text (splitOn, pack, unpack)
-import qualified Data.Set as S
+import qualified Data.HashSet as S
 
 type Game = [[Int]]
-type Games = S.Set Game
+type Games = S.HashSet Game
 type State = (Games, Game)
 
 play :: State -> State
