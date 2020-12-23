@@ -1,54 +1,38 @@
+import Control.Monad.ST
+import Data.Array.ST
 import Data.List
-import Data.Maybe
-import qualified Data.IntMap as M
-import Debug.Trace
 
-type State = (Int, M.IntMap Int)
-
-shuffle :: Int -> State -> State
-shuffle maxCup (cur, cups) = (follow, altered)
-  where taken = tail $ take 4 $ iterate (next cups) cur
-        dest = pick maxCup (cur-1) taken
-        follow = next cups (last taken)
-        after = next cups dest
-        altered = M.insert cur follow $
-                  M.insert dest (head taken) $
-                  M.insert (last taken) (next cups dest) $
-                    cups
-
-next :: M.IntMap Int -> Int -> Int
-next m n = fromMaybe (succ n) $ M.lookup n m
+shuffle :: Int -> (Int, STUArray s Int Int) -> ST s (Int, STUArray s Int Int)
+shuffle maxCup (current, array) = do
+  one <- readArray array current
+  two <- readArray array one
+  three <- readArray array two
+  let taken = [one, two, three]
+      dest = pick maxCup (current-1) taken
+  follow <- readArray array three
+  after <- readArray array dest
+  writeArray array current follow
+  writeArray array dest one
+  writeArray array three after
+  return (follow, array)
 
 pick :: Int -> Int -> [Int] -> Int
 pick maxCup target taken | target `elem` taken = pick maxCup (target-1) taken
 pick maxCup target taken | target <= 0 = pick maxCup maxCup taken
 pick maxCup target taken = target
 
-build :: Int -> [Int] -> State
-build maxCup list = (head list, cups)
-  where start = M.fromList $ zip list (tail list)
-        cups = M.insert lastOne (head list) start
-        lastOne = if maxCup `elem` list then last list else maxCup
-
-afterOne :: Int -> State -> [Int]
-afterOne n s = tail $ take (n+1) $ iterate (next cups) 1
-  where (_,cups) = s
-
-part1 = do
-  let maxCup = 9
-      initial = build maxCup [3,8,9,1,2,5,4,6,7]
-      states = iterate (shuffle maxCup) initial
-      go 0 state = state
-      go n state = go (n-1) $ shuffle maxCup state
-  print $ afterOne 8 $ go 100 initial
-
-part2 = do
+runShuffle 0 _ state = return state
+runShuffle n maxCup state = do
+  s1 <- shuffle maxCup state
+  runShuffle (n-1) maxCup s1
+  
+doShuffles = do
   let maxCup = 1000000
-      initial = build maxCup [3,8,9,1,2,5,4,6,7]
-      states = iterate (shuffle maxCup) initial
-      go 0 state = state
-      go n state = go (n-1) $ shuffle maxCup state
-  print $ afterOne 2 $ go 100000000 initial
+      list = [10,8,9,5,7,1,3,4,6]++[11..maxCup]++[2]
+  arr <- newListArray (1, maxCup) list :: ST s (STUArray s Int Int)
+  runShuffle 10000000 maxCup (2, arr)
+  a <- readArray arr 1
+  b <- readArray arr a
+  return $ (a,b)
 
-main = do
-    part2
+main = print $ runST doShuffles
