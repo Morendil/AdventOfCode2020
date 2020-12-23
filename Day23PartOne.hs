@@ -25,8 +25,11 @@ settle :: [Int] -> [Int]
 settle cups = take 8 $ drop (one+1) $ cycle cups
   where one = fromJust $ elemIndex 1 cups
 
+part1 :: String
+part1 = map intToDigit $ settle $ last $ take 101 $ iterate shuffle [2,8,4,5,7,3,9,6,1]
+
 main = do
   -- print $ map intToDigit $ settle $ last $ take 11 $ iterate shuffle [3,8,9,1,2,5,4,6,7] -- 92658374
   -- print $ map intToDigit $ settle $ last $ take 101 $ iterate shuffle [3,8,9,1,2,5,4,6,7] -- 67384529
   -- part1
-  print $ map intToDigit $ settle $ last $ take 101 $ iterate shuffle [2,8,4,5,7,3,9,6,1]
+  print $ part1
